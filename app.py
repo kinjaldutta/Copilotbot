@@ -1,24 +1,21 @@
-# app.py
+# app.py (updated to use .env file)
 from flask import Flask, request, jsonify
-from langchain.llms import OpenAI
-from langchain.chains import LLMChain
+from langchain_openai import OpenAI
 from langchain.prompts import PromptTemplate
 import os
+from dotenv import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize Flask app
 app = Flask(__name__)
-
-# Set your OpenAI API key
-os.environ["OPENAI_API_KEY"] = "your-openai-api-key-here"
 
 # Create a simple Langchain prompt template
 template = """Question: {question}
 
 Answer: """
 prompt = PromptTemplate(template=template, input_variables=["question"])
-
-# Create a Langchain chain
-llm = OpenAI(temperature=0.7)
-chain = LLMChain(llm=llm, prompt=prompt)
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -29,8 +26,16 @@ def ask():
     # Get the question from the request
     question = data['question']
     
+    # Check if API key is available
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "OpenAI API key not found in environment variables"}), 500
+    
+    # Use the newer pattern with pipe operator
+    llm = OpenAI(temperature=0.7)
+    chain = prompt | llm
+    
     # Run the chain
-    response = chain.run(question)
+    response = chain.invoke({"question": question})
     
     return jsonify({"response": response})
 
