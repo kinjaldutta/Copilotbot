@@ -1,4 +1,4 @@
-# app.py (updated to use .env file)
+# app.py (updated with compatible versions)
 from flask import Flask, request, jsonify
 from langchain_openai import OpenAI
 from langchain.prompts import PromptTemplate
@@ -30,12 +30,11 @@ def ask():
     if not os.getenv("OPENAI_API_KEY"):
         return jsonify({"error": "OpenAI API key not found in environment variables"}), 500
     
-    # Use the newer pattern with pipe operator
+    # Initialize OpenAI LLM
     llm = OpenAI(temperature=0.7)
-    chain = prompt | llm
     
-    # Run the chain
-    response = chain.invoke({"question": question})
+    # For older versions of langchain, use run instead of invoke
+    response = llm(prompt.format(question=question))
     
     return jsonify({"response": response})
 
