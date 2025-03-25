@@ -1,6 +1,6 @@
-# app.py (updated with compatible versions)
+# app.py (with Render.com port configuration)
 from flask import Flask, request, jsonify
-from langchain_openai import OpenAI
+from langchain.llms import OpenAI
 from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
@@ -17,6 +17,10 @@ template = """Question: {question}
 Answer: """
 prompt = PromptTemplate(template=template, input_variables=["question"])
 
+@app.route('/', methods=['GET'])
+def home():
+    return "Langchain API is running! Send POST requests to /ask"
+
 @app.route('/ask', methods=['POST'])
 def ask():
     data = request.json
@@ -30,13 +34,15 @@ def ask():
     if not os.getenv("OPENAI_API_KEY"):
         return jsonify({"error": "OpenAI API key not found in environment variables"}), 500
     
-    # Initialize OpenAI LLM
-    llm = OpenAI(temperature=0.7)
-    
-    # For older versions of langchain, use run instead of invoke
-    response = llm(prompt.format(question=question))
-    
-    return jsonify({"response": response})
+    # Initialize OpenAI LLM and run the prompt
+    try:
+        llm = OpenAI(temperature=0.7)
+        response = llm(prompt.format(question=question))
+        return jsonify({"response": response})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8000)
+    # Get port from environment variable or default to 8000
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host='0.0.0.0', port=port)
